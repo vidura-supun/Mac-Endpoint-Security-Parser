@@ -74,7 +74,9 @@ def parse_esf_jsonl(input_path, output_path):
         print("No events parsed.")
         return
 
-    fieldnames = list(rows[0].keys())
+    priority = ["time", "process_pid", "process_start_time", "process_exe", "event_key", "paths", "raw_event"]
+    rest = [k for k in rows[0].keys() if k not in priority]
+    fieldnames = priority + rest
 
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
