@@ -44,6 +44,7 @@ python parse_esf.py esf_events.jsonl esf_events.csv
 | `process_codesigning_flags` | Codesigning flags |
 | `process_start_time` | Process start time |
 | `event_key` | Top-level key of the event data |
+| `cmdline` | Full command line arguments for exec events |
 | `paths` | Pipe-separated list of paths found in the event |
 | `raw_event` | Full event data as JSON |
 
