@@ -56,10 +56,16 @@ def parse_esf_jsonl(input_path, output_path):
 
         raw_time = event.get("time", "")
         try:
-            dt_utc = datetime.fromtimestamp(float(raw_time), tz=timezone.utc)
+            # ESF time is ISO 8601 with nanoseconds e.g. "2026-03-30T09:39:05.814694527Z"
+            # Truncate fractional seconds to microseconds for Python compatibility
+            ts = raw_time.rstrip("Z")
+            if "." in ts:
+                base, frac = ts.split(".", 1)
+                ts = base + "." + frac[:6]
+            dt_utc = datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)
             date_time_utc = dt_utc.strftime("%Y-%m-%d %H:%M:%S.%f UTC")
             date_time_local = dt_utc.astimezone().strftime("%Y-%m-%d %H:%M:%S.%f %Z")
-        except (ValueError, TypeError, OSError):
+        except (ValueError, TypeError):
             date_time_utc = ""
             date_time_local = ""
 
