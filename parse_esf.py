@@ -117,9 +117,13 @@ def parse_esf_jsonl(input_path, output_path):
 
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) == 3:
+    import sys, os
+    if len(sys.argv) == 2:
+        input_path = sys.argv[1]
+        output_path = os.path.splitext(input_path)[0] + ".csv"
+        parse_esf_jsonl(input_path, output_path)
+    elif len(sys.argv) == 3:
         parse_esf_jsonl(sys.argv[1], sys.argv[2])
     else:
-        print("Usage: parse_esf.py <input.jsonl> <output.csv>")
+        print("Usage: parse_esf.py <input> [output.csv]")
         sys.exit(1)

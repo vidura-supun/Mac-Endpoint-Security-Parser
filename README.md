@@ -9,20 +9,23 @@ macOS Endpoint Security Framework events can be exported as JSONL (newline-delim
 ## Usage
 
 ```bash
-python parse_esf.py <input.jsonl> <output.csv>
+python parse_esf.py <input> [output.csv]
 ```
 
-### Example
+If no output path is provided, the output CSV is saved to the same location as the input file with a `.csv` extension.
+
+### Examples
 
 ```bash
-python parse_esf.py esf_events.jsonl esf_events.csv
+python parse_esf.py esf_events.json
+python parse_esf.py esf_events.json esf_events.csv
 ```
 
 ## Output Fields
 
 | Field | Description |
 |---|---|
-| `date_time_local` | Event timestamp in local time |
+| `date_time_local` | Event timestamp converted to local system time |
 | `date_time_utc` | Event timestamp in UTC |
 | `mach_time` | Mach absolute time |
 | `global_seq_num` | Global sequence number |
