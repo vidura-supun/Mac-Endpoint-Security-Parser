@@ -9,16 +9,16 @@ macOS Endpoint Security Framework events can be exported as JSONL (newline-delim
 ## Usage
 
 ```bash
-python parse_esf.py <input> [output.csv]
+python parse_esf.py <input> [output.xlsx]
 ```
 
-If no output path is provided, the output CSV is saved to the same location as the input file with a `.csv` extension.
+If no output path is provided, the output is saved to the same location as the input file with a `.xlsx` extension.
 
 ### Examples
 
 ```bash
 python parse_esf.py esf_events.json
-python parse_esf.py esf_events.json esf_events.csv
+python parse_esf.py esf_events.json esf_events.xlsx
 ```
 
 ## Output Fields
@@ -198,10 +198,17 @@ Reference: [es_events_t — Apple Developer Documentation](https://developer.app
 | `pty_close` | Closing of a pseudoterminal device |
 | `pty_grant` | Granting of a pseudoterminal device to a user |
 
+## Output
+
+The output is an Excel workbook (`.xlsx`) with two sheets:
+
+- **Events** — all parsed ESF events, one row per event, with auto-filter and frozen header row
+- **Process Tree** — process hierarchy reconstructed from `fork` and `exec` events, showing parent-child relationships with depth indentation
+
 ## Requirements
 
 - Python 3.x
-- No external dependencies
+- `openpyxl` (`pip install openpyxl`)
 
 ## Input Format
 
