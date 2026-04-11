@@ -69,7 +69,7 @@ def build_process_tree(raw_events):
     - All 'process' fields are seeded as known processes (captures roots).
 
     Returns a list of dicts ordered by DFS walk, each with:
-        pid, ppid, depth, exe, cmdline, start_time
+        pid, ppid, depth, exe, parent_exe, cmdline, start_time
     """
     processes = {}  # pid -> dict
 
@@ -147,6 +147,7 @@ def build_process_tree(raw_events):
             "ppid":       proc["ppid"],
             "depth":      depth,
             "exe":        proc["exe"],
+            "parent_exe": (processes.get(proc["ppid"]) or {}).get("exe", ""),
             "cmdline":    proc["cmdline"],
             "start_time": proc["start_time"],
         })
@@ -254,8 +255,8 @@ def parse_esf_jsonl(input_path, output_path):
 
     # Sheet 2: Process Tree
     ws_tree       = wb.create_sheet("Process Tree")
-    tree_fields   = ["pid", "ppid", "depth", "exe", "cmdline", "start_time"]
-    tree_labels   = ["PID", "PPID", "Depth", "Executable", "Command Line", "Start Time"]
+    tree_fields   = ["pid", "ppid", "parent_exe", "depth", "exe", "cmdline", "start_time"]
+    tree_labels   = ["PID", "PPID", "Parent Process", "Depth", "Executable", "Command Line", "Start Time"]
     style_header_row(ws_tree, tree_fields, display_names=tree_labels)
 
     for row_idx, proc in enumerate(tree_rows, 2):
