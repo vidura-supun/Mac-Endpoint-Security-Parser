@@ -1,4 +1,4 @@
-import json, os, sys
+import json, os, re, sys
 from datetime import datetime, timezone
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -31,8 +31,12 @@ def parse_time(raw_time):
         ts = raw_time.rstrip("Z")
         if "." in ts:
             base, frac = ts.split(".", 1)
-            ts = base + "." + frac[:6]
-        dt_utc = datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)
+            # Separate fractional digits from any timezone suffix (+HH:MM / -HH:MM)
+            m = re.match(r"(\d+)(.*)", frac)
+            digits, tz_suffix = (m.group(1), m.group(2)) if m else (frac, "")
+            ts = base + "." + digits[:6] + tz_suffix
+        dt = datetime.fromisoformat(ts)
+        dt_utc = dt.astimezone(timezone.utc) if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
         return (
             dt_utc.strftime("%Y-%m-%d %H:%M:%S.%f UTC"),
             dt_utc.astimezone().strftime("%Y-%m-%d %H:%M:%S.%f %Z"),
@@ -77,47 +81,47 @@ def build_process_tree(raw_events):
                               "cmdline": cmdline, "start_time": start_time}
         else:
             existing = processes[pid]
-            if ppid    != "": existing["ppid"]       = ppid
-            if exe     != "": existing["exe"]        = exe
-            if cmdline != "": existing["cmdline"]    = cmdline
-            if start_time != "": existing["start_time"] = start_time
+            if ppid       not in ("", None): existing["ppid"]       = ppid
+            if exe        not in ("", None): existing["exe"]        = exe
+            if cmdline    not in ("", None): existing["cmdline"]    = cmdline
+            if start_time not in ("", None): existing["start_time"] = start_time
 
     # Pass 1: seed known processes from the 'process' field of every event (establishes roots)
     for event in raw_events:
-        proc  = event.get("process", {})
-        audit = proc.get("audit_token", {})
+        proc  = event.get("process") or {}
+        audit = proc.get("audit_token") or {}
         upsert(
             pid        = audit.get("pid"),
             ppid       = proc.get("ppid", ""),
-            exe        = proc.get("executable", {}).get("path", ""),
+            exe        = (proc.get("executable") or {}).get("path", ""),
             cmdline    = "",
             start_time = proc.get("start_time", ""),
         )
 
     # Pass 2: fork/exec events override with authoritative child/target data
     for event in raw_events:
-        evt_data = event.get("event", {})
+        evt_data = event.get("event") or {}
         key = list(evt_data.keys())[0] if evt_data else None
 
         if key == "fork":
-            child   = evt_data["fork"].get("child", {})
-            c_audit = child.get("audit_token", {})
+            child   = evt_data["fork"].get("child") or {}
+            c_audit = child.get("audit_token") or {}
             upsert(
                 pid        = c_audit.get("pid"),
                 ppid       = child.get("ppid", ""),
-                exe        = child.get("executable", {}).get("path", ""),
+                exe        = (child.get("executable") or {}).get("path", ""),
                 cmdline    = "",
                 start_time = child.get("start_time", ""),
             )
 
         elif key == "exec":
-            target  = evt_data["exec"].get("target", {})
-            t_audit = target.get("audit_token", {})
-            args    = evt_data["exec"].get("args", [])
+            target  = evt_data["exec"].get("target") or {}
+            t_audit = target.get("audit_token") or {}
+            args    = evt_data["exec"].get("args") or []
             upsert(
                 pid        = t_audit.get("pid"),
                 ppid       = target.get("ppid", ""),
-                exe        = target.get("executable", {}).get("path", ""),
+                exe        = (target.get("executable") or {}).get("path", ""),
                 cmdline    = " ".join(args) if args else "",
                 start_time = target.get("start_time", ""),
             )
@@ -178,16 +182,16 @@ def parse_esf_jsonl(input_path, output_path):
 
         raw_events.append(event)
 
-        proc         = event.get("process", {})
-        audit        = proc.get("audit_token", {})
-        evt_data     = event.get("event", {})
-        action       = event.get("action", {})
-        result       = action.get("result", {})
-        result_inner = result.get("result", {})
+        proc         = event.get("process") or {}
+        audit        = proc.get("audit_token") or {}
+        evt_data     = event.get("event") or {}
+        action       = event.get("action") or {}
+        result       = action.get("result") or {}
+        result_inner = result.get("result") or {}
         paths        = extract_paths(evt_data)
 
-        exec_data = evt_data.get("exec", {})
-        args      = exec_data.get("args", [])
+        exec_data = evt_data.get("exec") or {}
+        args      = exec_data.get("args") or []
         cmdline   = " ".join(args) if args else ""
 
         date_time_utc, date_time_local = parse_time(event.get("time", ""))
@@ -209,7 +213,7 @@ def parse_esf_jsonl(input_path, output_path):
             "process_gid":                audit.get("rgid", ""),
             "process_euid":               audit.get("euid", ""),
             "process_session_id":         proc.get("session_id", ""),
-            "process_exe":                proc.get("executable", {}).get("path", ""),
+            "process_exe":                (proc.get("executable") or {}).get("path", ""),
             "process_signing_id":         proc.get("signing_id", ""),
             "process_team_id":            proc.get("team_id", ""),
             "process_is_platform_binary": proc.get("is_platform_binary", ""),
