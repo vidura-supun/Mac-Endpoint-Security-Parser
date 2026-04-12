@@ -1,4 +1,4 @@
-# parse-esf
+# Mac Endpoint Security Event Parser 
 
 A Python utility for parsing Apple Endpoint Security Framework (ESF) JSONL log files into CSV format for analysis.
 
